@@ -1,5 +1,5 @@
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text --profile think-tank)
-AWS_REGION=us-west-2
+AWS_REGION=eu-central-1
 
 AGENT_NAME=agentcore-amplify-nextjs-backend
 
