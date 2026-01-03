@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock'
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers'
 import { convertToModelMessages, streamText, UIMessage } from 'ai'
@@ -6,7 +5,7 @@ import { convertToModelMessages, streamText, UIMessage } from 'ai'
 export const maxDuration = 30
 
 const bedrock = createAmazonBedrock({
-  region: 'eu-west-2',
+  region: 'eu-central-1',
   credentialProvider: fromNodeProviderChain(),
 })
 
@@ -24,7 +23,6 @@ export async function OPTIONS(req: Request) {
 }
 
 export async function POST(req: Request) {
-  // Handle CORS preflight
   const origin = req.headers.get('origin')
   
   const {
@@ -34,27 +32,18 @@ export async function POST(req: Request) {
   }: { messages: UIMessage[]; model: string; reasoning: string } =
     await req.json()
 
-  // Only enable reasoning for Claude 3.5 Sonnet and Claude 3 Opus (confirmed working models)
-  const supportsReasoning = model.includes('claude-3-5-sonnet') || model === 'anthropic.claude-3-opus-20240229-v1:0'
-
-  const streamTextOptions: unknown = {
+  const result = streamText({
     model: bedrock(model),
     messages: convertToModelMessages(messages),
     system: 'You are a helpful assistant that can answer questions and help with tasks',
-  }
-
-  // Only add reasoning_effort for confirmed supported models
-  if (supportsReasoning && reasoning) {
-    (streamTextOptions as any).providerOptions = {
+    providerOptions: {
       bedrock: {
         additionalModelRequestFields: {
           reasoning_effort: reasoning,
         },
       },
-    }
-  }
-
-  const result = streamText(streamTextOptions as any)
+    },
+  })
 
   const response = result.toUIMessageStreamResponse({
     sendSources: true,
